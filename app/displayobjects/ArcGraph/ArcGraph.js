@@ -4,98 +4,136 @@ import PIXI from 'pixi.js';
 import TWEEN from 'tween.js';
 import GRAD from './gradient.jpg';
 
+var options = {
+  barSize : 1,
+  lineWidth : 15,
+  tweenLength : 1000,
+  blurFactor : 20,
+  radius : 100,
+  percent : 100
+}
+
+const BAR_START = (Math.PI * 2) * .4;
+const BAR_END = (Math.PI * 2) * 1.1;
+
 export default class ArcGraph extends PIXI.DisplayObjectContainer {
 
+  /**
+   * ArcGraph
+   * @param  {...[type]} args 
+   * @return {null}
+   */
   constructor(...args) {
 
     super(...args);
 
-    this.percent = 0;
-  	this.rotation = Math.PI * .7; // easier than doing math in drawArc => moveto (but also buggered things up)
-  	this.pivot = new PIXI.Point(.5, .5);
-    this.lineWidth = 12;
-
-    this.blurFilter = new PIXI.BlurFilter();
-    this.bar = new PIXI.Graphics();
+    // Add all our globals
     this.tween = new TWEEN.Tween(this);
+    this.gradTexture = new PIXI.Texture.fromImage(GRAD);
+    this.blurFilter = new PIXI.BlurFilter();
+    this.bg = this.addBackground();
     this.grad = this.addGradient();
     this.grad2 = this.addGradient();
+    this.bar = new PIXI.Graphics();
 
-    this.addBackground();
-
-    this.blurFilter.blurX = 20;
-    this.blurFilter.blurY = 20;
-
+    // add assets to stage
+    this.addChild(this.bg);
+    this.addChild(this.bar);
     this.addChild(this.grad);
     this.addChild(this.grad2);
-    this.addChild(this.bar);
 
+    // First masked gradient
     this.grad.filters = [this.blurFilter];
     this.grad.mask = this.bar;
+
+    // Second masked gradient
+    this.grad2.blendMode = PIXI.blendModes.ADD;
     this.grad2.mask = this.bar;
 
-    this.setDecimal(1);
-
-    window.test = this;
+    // Start an animation
+    this.percent = .3;
+    this.setPercent(options.percent);
 
   }
 
+  /**
+   * Set graph in %
+   * @param {number} perc 0-100
+   */
   setPercent(perc) {
   	this.setDecimal(perc/100);
   }
 
+  /**
+   * Set graph as .
+   * @param {number} decimal 0-100
+   */
   setDecimal(decimal) {
 
     if(decimal > 1) {
       decimal = 1;
     }
 
-    this.tween.to({percent: decimal}, 1000);
+    this.tween.to({percent: decimal}, options.tweenLength);
 
     this.tween.onUpdate(this.drawArc.bind(this));
 
     this.tween.start();
   }
 
+  /**
+   * Get a gradient sprite
+   */
   addGradient() {
-
-    this.gradTexture = new PIXI.Texture.fromImage(GRAD);
     var grad = new PIXI.Sprite(this.gradTexture);
-    grad.pivot = new PIXI.Point(240, 240);
-    grad.rotation = Math.PI * -.7;
-    grad.width = 240;
-    grad.height = 240;
-    grad.position = new PIXI.Point(-15, 20);
+
+    grad.width = options.radius * 2 + options.blurFactor * 2;
+    grad.height = options.radius * 2 + options.blurFactor * 2;
+    grad.position = new PIXI.Point(-options.blurFactor / 2, -options.blurFactor / 2)
 
     return grad;
   }
 
+  /**
+   * Get a background graphics
+   */
   addBackground() {
   	var bg = new PIXI.Graphics();
+    
+    var cy = options.radius + options.lineWidth;
+    var cx = cy;
 
-  	bg.lineStyle(this.lineWidth, 0x000000);
-	  bg.drawCircle(0, 0, 100);
-	  bg.lineStyle(this.lineWidth, 0x444444);
-	  bg.arc(0,0,100, (Math.PI * 2) * .8, 0,  false);
+  	bg.lineStyle(options.lineWidth, 0x000000);
+	  bg.drawCircle(cx, cy, options.radius);
+	  bg.lineStyle(options.lineWidth, 0x444444);
+	  bg.arc(cx,cy,options.radius, BAR_START, BAR_END, true);
 
-    this.addChild(bg);
+    return bg;
 
   }
 
+  /**
+   * Update a graphics
+   * @return {null}
+   */
   drawArc() {
-    var angle = (Math.PI * 1.6) * this.percent;
+
+    var angle = ((BAR_END - BAR_START) * this.percent) + BAR_START;
+    var blurDescale = .7;
+    var cy = options.radius + options.lineWidth;
+    var cx = cy;
 
   	this.bar.clear();
-  	this.bar.moveTo(100,0); // move to origin to avoid extra lines, needs to be positioned properly
-    //console.log(100 * Math.cos(angle), 100 * Math.sin(angle));
-  	this.bar.lineStyle(this.lineWidth, 0xFF00FF);
-    this.bar.arc(0, 0, 100,
-    	0,
-    	angle
-    );
+  	this.bar.lineStyle(options.lineWidth, 0xFF00FF);
+    // Move to origin
+    this.bar.moveTo(options.radius * Math.cos(BAR_START) + cx, options.radius * Math.sin(BAR_START) + cy);
+    //this.bar.lineTo(options.radius * Math.cos(angle) + cx, options.radius * Math.sin(angle) + cy);
 
-    this.blurFilter.blurX = (15 * this.percent) + 5;
-    this.blurFilter.blurY = (15 * this.percent) + 5;
+    this.bar.arc(cx, cy, options.radius, BAR_START, angle, false);
+
+    // descale blur to prevent blue clipping
+    this.blurFilter.blurX = (options.blurFactor * blurDescale) * this.percent;
+    this.blurFilter.blurY = (options.blurFactor * blurDescale) * this.percent;
 
   }
 
