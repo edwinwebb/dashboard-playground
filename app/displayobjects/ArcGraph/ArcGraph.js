@@ -6,7 +6,7 @@ import GRAD from './gradient.jpg';
 
 var options = {
   barSize : 1,
-  lineWidth : 15,
+  lineWidth : 20,
   tweenLength : 1000,
   blurFactor : 20,
   radius : 100,
@@ -100,7 +100,7 @@ export default class ArcGraph extends PIXI.DisplayObjectContainer {
   addBackground() {
   	var bg = new PIXI.Graphics();
     
-    var cy = options.radius + options.lineWidth;
+    var cy = options.radius + options.lineWidth / 2;
     var cx = cy;
 
   	bg.lineStyle(options.lineWidth, 0x000000);
@@ -120,7 +120,7 @@ export default class ArcGraph extends PIXI.DisplayObjectContainer {
 
     var angle = ((BAR_END - BAR_START) * this.percent) + BAR_START;
     var blurDescale = .7;
-    var cy = options.radius + options.lineWidth;
+    var cy = options.radius + options.lineWidth / 2;
     var cx = cy;
 
   	this.bar.clear();
