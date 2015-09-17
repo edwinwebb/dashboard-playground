@@ -60,7 +60,6 @@ var config = {
   devtool: DEBUG ? '#inline-source-map' : false,
   entry: {
     app: [
-      'webpack/hot/dev-server',
       './app.js'
     ]
   },
